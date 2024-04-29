@@ -1,0 +1,49 @@
+import json
+import boto3
+import time
+
+s3 = boto3.client('s3')
+
+def lambda_handler(event, context):
+    # Extract request data from API Gateway event
+    http_method = event['httpMethod']
+    query_string_params = event['queryStringParameters']
+    headers = event['headers']
+    request_body = json.loads(event['body']) if event['body'] else {}
+    
+    # Define S3 bucket details
+    bucket_name = "s3gatewayhardik"
+    folder_name = "testgate"  # Specify your folder name here
+    key_name = folder_name + "/" + str(int(time.time())) + ".json"  # Assuming you imported time module
+    
+    # Serialize the request body as JSON
+    json_data = json.dumps(request_body)
+    
+    # Put the JSON data into S3
+    params = {'Bucket': bucket_name, 'Key': key_name, 'Body': json_data}
+    try:
+        response = s3.put_object(**params)
+        print("Successfully saved object to", bucket_name + "/" + key_name, "and data =", json_data)
+        
+        # Construct HTTP response
+        http_response = {
+            "statusCode": 200,
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "body": json.dumps({"message": "Successfully saved object to S3"})
+        }
+        
+        return http_response
+    except Exception as e:
+        print(e)
+        # Construct HTTP error response
+        http_error_response = {
+            "statusCode": 500,
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "body": json.dumps({"error": str(e)})
+        }
+        
+        return http_error_response
